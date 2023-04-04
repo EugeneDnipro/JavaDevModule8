@@ -8,43 +8,29 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.ZoneId;
+import java.time.zone.ZoneRulesException;
+import java.util.Arrays;
 import java.util.TimeZone;
 
 @WebFilter("/time/*")
 public class TimezoneValidateFilter extends HttpFilter {
     @Override
     protected void doFilter(HttpServletRequest req, HttpServletResponse resp, FilterChain chain) throws ServletException, IOException {
+        String timeZoneId = null;
         String timezone = req.getParameter("timezone");
-        ZoneId zone = ZoneId.of(timezone);
-        TimeZone.getTimeZone(zone);
-        if (true) {
+        if (timezone == null) {
+            timeZoneId = "UTC";
+        } else if ((timezone.contains(" ")) || (timezone.contains("-"))) {
+            String[] splitted = timezone.split("[\\s\\-]");
+            timeZoneId = splitted[0];
+        } else {
+            timeZoneId = timezone;
+        }
+        if (Arrays.asList(TimeZone.getAvailableIDs()).contains(timeZoneId)) {
             chain.doFilter(req, resp);
         } else {
-            resp.setStatus(400);
-            resp.setContentType("application/json");
-            resp.getWriter().write("{\"Error\": \"Invalid timezone\"}");
+            resp.sendError(400, "Error: Invalid timezone");
             resp.getWriter().close();
         }
     }
 }
-
-
-//@WebFilter(value = "/api/*")
-//public class AuthFilter extends HttpFilter {
-//    @Override
-//    protected void doFilter(HttpServletRequest req,
-//                            HttpServletResponse resp,
-//                            FilterChain chain) throws IOException, ServletException {
-//
-//        String authHeaderValue = req.getHeader("Authorization");
-//        if ("111".equals(authHeaderValue)) {
-//            chain.doFilter(req, resp);
-//        } else {
-//            resp.setStatus(401);
-//
-//            resp.setContentType("application/json");
-//            resp.getWriter().write("{\"Error\": \"Not authorized\"}");
-//            resp.getWriter().close();
-//        }
-//    }
-//}
